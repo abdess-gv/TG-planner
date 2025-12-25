@@ -29,10 +29,14 @@ const App: React.FC = () => {
   const [editingSession, setEditingSession] = useState<Session | undefined>(undefined);
   
   // Embed Mode Check
-  const isEmbed = hash.startsWith('#embed');
+  // Support both #embed and #/embed for robustness
+  const isEmbed = hash.startsWith('#embed') || hash.startsWith('#/embed');
   const embedParams = new URLSearchParams(hash.split('?')[1]);
   const embedProgram = embedParams.get('program');
+  const embedLimit = embedParams.get('limit');
+  
   const filterProgram = embedProgram === 'all' ? 'ALL' : (embedProgram as Program) || 'ALL';
+  const limitMonths = embedLimit ? parseInt(embedLimit) : undefined;
 
   useEffect(() => {
     setSessions(db.getSessions());
@@ -73,13 +77,15 @@ const App: React.FC = () => {
     setView('EDITOR');
   };
 
-  // --- EMBED VIEW ---
+  // --- EMBED VIEW (Student Facing) ---
   if (isEmbed) {
     return (
       <div className="min-h-screen bg-slate-50 p-4 font-sans">
         <SessionList 
           sessions={sessions} 
           filterProgram={filterProgram as any}
+          limitMonths={limitMonths}
+          isEmbedView={true}
         />
       </div>
     );

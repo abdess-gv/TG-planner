@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Session, Program, Role, Speaker } from '../types';
 import { db } from '../services/mockDatabase';
 import { Calendar, MapPin, Users, Clock, Edit2, Trash2, Video, UserPlus, Mic, ShieldCheck, ClipboardList, Filter, Search } from 'lucide-react';
-import { format, isWithinInterval, parseISO, startOfDay, endOfDay } from 'date-fns';
+import { format, isWithinInterval, parseISO, startOfDay, endOfDay, add } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import SubscriptionModal from './SubscriptionModal';
 import AttendeeListModal from './AttendeeListModal';
@@ -13,9 +13,19 @@ interface SessionListProps {
   onDelete?: (id: string) => void;
   userRole?: Role; 
   filterProgram?: Program | 'ALL';
+  limitMonths?: number;
+  isEmbedView?: boolean;
 }
 
-const SessionList: React.FC<SessionListProps> = ({ sessions, onEdit, onDelete, userRole, filterProgram = 'ALL' }) => {
+const SessionList: React.FC<SessionListProps> = ({ 
+    sessions, 
+    onEdit, 
+    onDelete, 
+    userRole, 
+    filterProgram = 'ALL',
+    limitMonths,
+    isEmbedView = false
+}) => {
   const [selectedProgram, setSelectedProgram] = useState<Program | 'ALL'>(filterProgram);
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [searchQuery, setSearchQuery] = useState('');
@@ -32,6 +42,23 @@ const SessionList: React.FC<SessionListProps> = ({ sessions, onEdit, onDelete, u
   }, []);
 
   const filteredSessions = sessions.filter(session => {
+    const sessionDate = parseISO(session.date);
+    const today = startOfDay(new Date());
+
+    // --- EMBED SPECIFIC FILTERS ---
+    if (isEmbedView) {
+        // 1. Hide past events in Embed mode (Students usually want upcoming)
+        if (sessionDate < today) return false;
+
+        // 2. Limit Months Ahead (Configured in Embed Generator)
+        if (limitMonths) {
+            const maxDate = add(today, { months: limitMonths });
+            if (sessionDate > maxDate) return false;
+        }
+    }
+
+    // --- STANDARD FILTERS ---
+
     // Program Filter
     if (selectedProgram !== 'ALL' && session.program !== selectedProgram) return false;
     
@@ -43,10 +70,8 @@ const SessionList: React.FC<SessionListProps> = ({ sessions, onEdit, onDelete, u
         if (!matchesTitle && !matchesDescription) return false;
     }
     
-    // Date Range Filter
+    // Date Range Filter (Manual User Filter)
     if (dateRange.start || dateRange.end) {
-        const sessionDate = parseISO(session.date);
-        
         // If only start date is selected: show everything from that date
         if (dateRange.start && !dateRange.end) {
             if (sessionDate < startOfDay(parseISO(dateRange.start))) return false;
@@ -82,7 +107,7 @@ const SessionList: React.FC<SessionListProps> = ({ sessions, onEdit, onDelete, u
     <>
       <div className="space-y-6">
         {/* Filters Panel */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
+        <div className={`bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4 ${isEmbedView ? 'sticky top-0 z-10' : ''}`}>
             {/* Search Bar */}
             <div className="relative">
                 <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
@@ -299,7 +324,7 @@ const SessionList: React.FC<SessionListProps> = ({ sessions, onEdit, onDelete, u
             <div className="col-span-full text-center py-12 text-slate-500">
               {searchQuery || dateRange.start || dateRange.end 
                 ? "Geen sessies gevonden met deze filters." 
-                : "Geen sessies beschikbaar."}
+                : (isEmbedView ? "Geen komende activiteiten gepland." : "Geen sessies beschikbaar.")}
             </div>
           )}
         </div>
@@ -310,7 +335,7 @@ const SessionList: React.FC<SessionListProps> = ({ sessions, onEdit, onDelete, u
             session={subscribeSession} 
             onClose={() => setSubscribeSession(null)}
             onSuccess={() => {
-                alert('Bedankt voor je inschrijving!');
+                alert('Bedankt voor je inschrijving! Je ontvangt een bevestiging per mail.');
             }}
           />
       )}

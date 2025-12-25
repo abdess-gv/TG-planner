@@ -40,13 +40,20 @@ export const MOCK_SPEAKERS: Speaker[] = [
   }
 ];
 
+// Helper to get a future date string
+const getFutureDate = (daysToAdd: number) => {
+  const date = new Date();
+  date.setDate(date.getDate() + daysToAdd);
+  return date.toISOString().split('T')[0];
+};
+
 export const MOCK_SESSIONS: Session[] = [
   {
     id: '1',
     title: 'Introductie AI Ready',
     program: Program.AI_READY,
     description: 'Een kennismaking met de basisprincipes van Kunstmatige Intelligentie en wat je kunt verwachten van het programma.',
-    date: '2023-11-15',
+    date: getFutureDate(7), // 1 week from now
     startTime: '10:00',
     endTime: '11:30',
     location: 'Online',
@@ -65,7 +72,7 @@ export const MOCK_SESSIONS: Session[] = [
     title: 'Sollicitatiegesprek Training',
     program: Program.WORK_READY,
     description: 'Leer effectieve technieken voor je volgende sollicitatiegesprek. We oefenen met veelgestelde vragen.',
-    date: '2023-11-16',
+    date: getFutureDate(14), // 2 weeks from now
     startTime: '14:00',
     endTime: '16:00',
     location: 'Lokaal 3.02',
@@ -82,7 +89,7 @@ export const MOCK_SESSIONS: Session[] = [
     title: 'Pathways Kick-off',
     program: Program.PATHWAYS,
     description: 'De start van jouw reis. Ontmoet je mentoren en medestudenten.',
-    date: '2023-11-20',
+    date: getFutureDate(30), // 1 month from now
     startTime: '09:00',
     endTime: '12:00',
     location: 'Hoofd Aula',
